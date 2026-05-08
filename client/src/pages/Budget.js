@@ -3,129 +3,180 @@ import api from '../services/api';
 
 function Budget({ userId }) {
   const [budgets, setBudgets] = useState([]);
+  const [monthlySalary, setMonthlySalary] = useState('');
+  const [budgetMode, setBudgetMode] = useState('fixed');
+
   const [formData, setFormData] = useState({
-    category: '',
-    limit: '',
+    name: '',           // e.g. "50/30/20 Plan"
+    percentage: '',
+    allocations: [
+      { category: 'Needs (Rent, Utilities, etc.)', percent: 50 },
+      { category: 'Wants (Entertainment, Dining)', percent: 30 },
+      { category: 'Savings & Debt', percent: 20 },
+    ]
   });
 
   const loadBudgets = async () => {
     try {
-      const budgetsData = await api.getBudgets(userId);
-      setBudgets(budgetsData);
+      const data = await api.getBudgets(userId);
+      setBudgets(data);
     } catch (err) {
-      console.log('Error loading budgets');
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    if (userId) {
-      loadBudgets();
-    }
+    if (userId) loadBudgets();
   }, [userId]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleSalaryChange = (e) => setMonthlySalary(e.target.value);
+
+  const handlePresetChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({ ...prev, percentage: value }));
+
+    if (value === '50-30-20') {
+      setFormData(prev => ({
+        ...prev,
+        name: '50/30/20 Plan',
+        allocations: [
+          { category: 'Needs', percent: 50 },
+          { category: 'Wants', percent: 30 },
+          { category: 'Savings', percent: 20 },
+        ]
+      }));
+    } else if (value === '60-20-20') {
+      setFormData(prev => ({
+        ...prev,
+        name: '60/20/20 Plan',
+        allocations: [
+          { category: 'Needs', percent: 60 },
+          { category: 'Wants', percent: 20 },
+          { category: 'Savings', percent: 20 },
+        ]
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const budgetData = {
-        userId,
-        category: formData.category,
-        limit: parseFloat(formData.limit),
-      };
+    if (!monthlySalary) {
+      alert("Please enter your estimated monthly salary");
+      return;
+    }
 
-      await api.updateBudget(budgetData);
-      setFormData({ category: '', limit: '' });
+    try {
+      const salary = parseFloat(monthlySalary);
+      const totalPercent = formData.allocations.reduce((sum, item) => sum + item.percent, 0);
+
+      if (totalPercent !== 100) {
+        alert("Total percentage must equal 100%");
+        return;
+      }
+
+      // Save each allocation as separate budget
+      for (const alloc of formData.allocations) {
+        const limit = (salary * alloc.percent) / 100;
+        await api.updateBudget({
+          userId,
+          category: alloc.category,
+          limit: limit,
+        });
+      }
+
+      alert("Budget plan saved successfully!");
       loadBudgets();
     } catch (err) {
-      console.log('Error saving budget');
+      console.error(err);
+      alert("Failed to save budget");
     }
   };
 
   return (
     <div className="container mt-4">
-      <h1 className="mb-4">Budget Settings</h1>
+      <h1 className="mb-4">Budget Planner</h1>
 
       <div className="row">
-        <div className="col-md-6">
+        <div className="col-md-7">
           <div className="card">
             <div className="card-header">
-              <h5>Set Budget Limit</h5>
+              <h5>Create Budget Plan</h5>
             </div>
             <div className="card-body">
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="category" className="form-label">
-                    Category
-                  </label>
-                  <select
-                    className="form-select"
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select category</option>
-                    <option value="Groceries">Groceries</option>
-                    <option value="Transport">Transport</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Education">Education</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
 
-                <div className="mb-3">
-                  <label htmlFor="limit" className="form-label">
-                    Monthly Limit ($)
-                  </label>
+              <div className="mb-3">
+                <label className="form-label">Estimated Monthly Income</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={monthlySalary}
+                  onChange={handleSalaryChange}
+                  placeholder="5000"
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Choose Budget Style</label>
+                <select className="form-select" onChange={handlePresetChange}>
+                  <option value="">Custom</option>
+                  <option value="50-30-20">50/30/20 (Classic)</option>
+                  <option value="60-20-20">60/20/20 (Aggressive Savings)</option>
+                </select>
+              </div>
+
+              <h6 className="mt-4">Allocations</h6>
+              {formData.allocations.map((alloc, index) => (
+                <div key={index} className="input-group mb-2">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={alloc.category}
+                    onChange={(e) => {
+                      const newAlloc = [...formData.allocations];
+                      newAlloc[index].category = e.target.value;
+                      setFormData(prev => ({ ...prev, allocations: newAlloc }));
+                    }}
+                  />
                   <input
                     type="number"
                     className="form-control"
-                    id="limit"
-                    name="limit"
-                    value={formData.limit}
-                    onChange={handleChange}
-                    required
+                    style={{ maxWidth: '120px' }}
+                    value={alloc.percent}
+                    onChange={(e) => {
+                      const newAlloc = [...formData.allocations];
+                      newAlloc[index].percent = parseFloat(e.target.value) || 0;
+                      setFormData(prev => ({ ...prev, allocations: newAlloc }));
+                    }}
                   />
+                  <span className="input-group-text">%</span>
                 </div>
+              ))}
 
-                <div className="d-grid">
-                  <button type="submit" className="btn btn-primary">
-                    Save Budget
-                  </button>
-                </div>
-              </form>
+              <div className="d-grid mt-4">
+                <button onClick={handleSubmit} className="btn btn-primary btn-lg">
+                  Save Budget Plan
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="col-md-6">
+        {/* Current Budgets */}
+        <div className="col-md-5">
           <div className="card">
             <div className="card-header">
               <h5>Current Budgets</h5>
             </div>
             <div className="card-body">
               {budgets.length === 0 ? (
-                <p className="text-muted">No budgets set yet.</p>
+                <p>No budgets set yet.</p>
               ) : (
-                <div className="list-group">
-                  {budgets.map((budget) => (
-                    <div key={budget._id} className="list-group-item">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="fw-bold">{budget.category}</span>
-                        <span className="badge bg-primary">${budget.limit.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                budgets.map(b => (
+                  <div key={b._id} className="d-flex justify-content-between mb-2">
+                    <span>{b.category}</span>
+                    <strong>${b.limit.toFixed(2)}</strong>
+                  </div>
+                ))
               )}
             </div>
           </div>
