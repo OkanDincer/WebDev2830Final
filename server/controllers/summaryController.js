@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 
+//gets summary for user
 const getSummary = async (req, res) => {
   try {
     const { userId } = req.params;

@@ -12,10 +12,10 @@ function Dashboard({ userId }) {
 
   const currentDate = new Date();
 
+  //loads summary, transactions, and budgets on dashboard
   const loadData = async () => {
     if (!userId) return;
     setLoading(true);
-
     try {
       const [summaryData, transactionsData, budgetsData] = await Promise.all([
         api.getSummary(userId).catch(() => ({ totalIncome: 0, totalExpenses: 0, balance: 0 })),
@@ -25,12 +25,11 @@ function Dashboard({ userId }) {
 
       setSummary(summaryData);
       setTransactions(transactionsData || []);
-      setBudgets(budgetsData);
+      setBudgets(budgetsData || []);
 
       const sorted = [...(transactionsData || [])].sort((a, b) => 
         sortOrder === 'desc' ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date)
       );
-      
       setFilteredTransactions(sorted);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -49,6 +48,7 @@ function Dashboard({ userId }) {
     setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
   };
 
+  // toggles between ascending and descending date sort
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this transaction?")) return;
     try {
@@ -60,21 +60,18 @@ function Dashboard({ userId }) {
     }
   };
 
+  // formats date and adjusts for timezone issues
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     date.setDate(date.getDate() + 1);   
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  // calculates the start date of the selected budget view 
   const getPeriodStart = (view) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
     if (view === 'daily') return today;
     if (view === 'weekly') {
       const firstDay = today.getDate() - today.getDay();
@@ -83,15 +80,23 @@ function Dashboard({ userId }) {
     return new Date(today.getFullYear(), today.getMonth(), 1);
   };
 
+  // shows user's spending in the selected budget category and time period, used for progress bars
   const getSpentInPeriod = (budgetCategory, view) => {
     const periodStart = getPeriodStart(view);
-    
+
+    //maps budget categories to related transaction categories
+    const categoryMap = {
+      'needs': ['groceries', 'transport', 'utilities', 'healthcare', 'housing'],
+      'wants': ['entertainment', 'other', 'travel', 'dining out'],
+      'savings': ['savings', 'education', 'investments']
+    };
+
     return transactions
       .filter(t => {
         if (t.type !== 'expense') return false;
-        const txCategory = (t.category || '').toLowerCase().trim();
-        const budgetCat = (budgetCategory || '').toLowerCase().trim();
-        return txCategory === budgetCat || txCategory.includes(budgetCat) || budgetCat.includes(txCategory);
+        const txCat = (t.category || '').toLowerCase().trim();
+        const budCat = (budgetCategory || '').toLowerCase().trim();
+        return txCat === budCat || (categoryMap[budCat] && categoryMap[budCat].includes(txCat));
       })
       .filter(t => {
         const txDate = new Date(t.date);
@@ -101,21 +106,18 @@ function Dashboard({ userId }) {
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
   };
 
-  const getBudgetUsage = () => {
-    return budgets.map(budget => {
-      const spent = getSpentInPeriod(budget.category, budgetView);
-      let allotted = budget.limit;
+  // chooses preset allocations and name based on selection
+  const budgetUsage = budgets.map(budget => {
+    if (!budget) return null;
+    const spent = getSpentInPeriod(budget.category, budgetView);
+    let allotted = budget.limit || 0;
 
-      if (budgetView === 'weekly') allotted = budget.limit / 4.345;
-      if (budgetView === 'daily') allotted = budget.limit / 30.4375;
+    if (budgetView === 'weekly') allotted = allotted / 4.345;
+    if (budgetView === 'daily') allotted = allotted / 30.4375;
 
-      const usagePercent = allotted > 0 ? Math.min((spent / allotted) * 100, 100) : 0;
-
-      return { ...budget, spent, allotted, usagePercent };
-    });
-  };
-
-  const budgetUsage = getBudgetUsage();
+    const usagePercent = allotted > 0 ? Math.min((spent / allotted) * 100, 100) : 0;
+    return { ...budget, spent, allotted, usagePercent };
+  }).filter(Boolean); // Removes any null entries
 
   return (
     <div className="container mt-4">
@@ -127,7 +129,6 @@ function Dashboard({ userId }) {
         </div>
       </div>
 
-      
       <div className="row mb-4">
         <div className="col-md-4">
           <div className="card text-white bg-success">
@@ -155,7 +156,6 @@ function Dashboard({ userId }) {
         </div>
       </div>
 
-      
       <div className="card mb-4">
         <div className="card-header d-flex justify-content-between align-items-center">
           <h5>Budget Overview — {budgetView.charAt(0).toUpperCase() + budgetView.slice(1)}</h5>
@@ -173,15 +173,15 @@ function Dashboard({ userId }) {
               {budgetUsage.map((budget) => (
                 <div className="col-md-6" key={budget._id}>
                   <div className="d-flex justify-content-between mb-1">
-                    <strong>{budget.category}</strong>
-                    <span>${budget.spent.toFixed(2)} / ${budget.allotted.toFixed(2)}</span>
+                    <strong>{budget?.category}</strong>
+                    <span>${budget?.spent.toFixed(2)} / ${budget?.allotted.toFixed(2)}</span>
                   </div>
                   <div className="progress" style={{ height: '25px' }}>
                     <div 
-                      className={`progress-bar ${budget.usagePercent > 90 ? 'bg-danger' : budget.usagePercent > 70 ? 'bg-warning' : 'bg-success'}`}
-                      style={{ width: `${budget.usagePercent}%` }}
+                      className={`progress-bar ${budget?.usagePercent > 90 ? 'bg-danger' : budget?.usagePercent > 70 ? 'bg-warning' : 'bg-success'}`}
+                      style={{ width: `${budget?.usagePercent}%` }}
                     >
-                      {budget.usagePercent.toFixed(0)}%
+                      {budget?.usagePercent.toFixed(0)}%
                     </div>
                   </div>
                 </div>
@@ -191,7 +191,6 @@ function Dashboard({ userId }) {
         </div>
       </div>
 
-      
       <div className="mb-3">
         <button className="btn btn-secondary me-2" onClick={toggleSort}>
           Sort by Date ({sortOrder === 'desc' ? 'Newest First' : 'Oldest First'})

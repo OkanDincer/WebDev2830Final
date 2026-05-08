@@ -18,6 +18,7 @@ function AddExpense({ userId }) {
     });
   };
 
+  //validtates input and sends to api
   const handleSubmit = async (e) => {
     e.preventDefault();
     

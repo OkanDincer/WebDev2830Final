@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https'
+const API_BASE_URL = 'http://localhost:5000';
 
 const http = axios.create({
   baseURL: API_BASE_URL,
@@ -11,16 +11,9 @@ const http = axios.create({
 });
 
 http.interceptors.response.use(
-  (response) => {
-    if (response.data) {
-      response.data._timestamp = Date.now();
-    }
-    return response;
-  },
+  (response) => response,
   (error) => {
-    if (error.response && error.response.status === 404) {
-      console.log('Resource not found');
-    }
+    console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
@@ -37,6 +30,7 @@ const getDefaultUser = async () => {
   }
 };
 
+//gets transactions for user
 const getTransactions = async (userId) => {
   if (!userId) {
     throw new Error('UserId required');
@@ -51,6 +45,7 @@ const getTransactions = async (userId) => {
   return response.data;
 };
 
+//creates new transaction
 const createTransaction = async (transaction) => {
   const payload = {
     ...transaction,
@@ -62,6 +57,7 @@ const createTransaction = async (transaction) => {
   return response.data;
 };
 
+//updates transaction
 const updateTransaction = async (id, payload) => {
   if (!id || !payload) {
     throw new Error('ID and payload required');
@@ -71,6 +67,7 @@ const updateTransaction = async (id, payload) => {
   return response.data;
 };
 
+//deletes transaction
 const deleteTransaction = async (id) => {
   if (!id) {
     throw new Error('ID required');
@@ -80,6 +77,7 @@ const deleteTransaction = async (id) => {
   return response.data;
 };
 
+//updates budget
 const updateBudget = async (budgetData) => {
   const processedData = {
     ...budgetData,
@@ -90,6 +88,28 @@ const updateBudget = async (budgetData) => {
   return response.data;
 };
 
+//detletes one budget
+const deleteBudget = async (id) => {
+  if (!id) {
+    throw new Error('Budget ID required');
+  }
+  const response = await http.delete(`/budget/${id}`);
+  return response.data;
+};
+
+//deletes all budgets
+const deleteAllBudgets = async (userId) => {
+  if (!userId) {
+    throw new Error('UserId required');
+  }
+  const response = await http.delete(`/budget/all`, { 
+    params: { userId } 
+  });
+  return response.data;
+};
+
+
+//gets summary data
 const getSummary = async (userId) => {
   if (!userId) {
     throw new Error('UserId required');
@@ -99,6 +119,7 @@ const getSummary = async (userId) => {
   return response.data;
 };
 
+//gets budgets for user
 const getBudgets = async (userId) => {
   const response = await http.get('/budget', { params: { userId } });
   return response.data;
@@ -113,4 +134,6 @@ export default {
   updateBudget,
   getSummary,
   getBudgets,
+  deleteBudget,        
+  deleteAllBudgets,    
 };

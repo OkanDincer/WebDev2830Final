@@ -4,18 +4,17 @@ import api from '../services/api';
 function Budget({ userId }) {
   const [budgets, setBudgets] = useState([]);
   const [monthlySalary, setMonthlySalary] = useState('');
-  const [budgetMode, setBudgetMode] = useState('fixed');
-
   const [formData, setFormData] = useState({
     name: '',
     percentage: '',
     allocations: [
-      { category: 'Needs (Rent, Utilities, etc.)', percent: 50 },
-      { category: 'Wants (Entertainment, Dining)', percent: 30 },
-      { category: 'Savings & Debt', percent: 20 },
+      { category: 'Needs', percent: 50 },
+      { category: 'Wants', percent: 30 },
+      { category: 'Savings', percent: 20 },
     ]
   });
 
+  // Gets budgets for the user and updates state
   const loadBudgets = async () => {
     try {
       const data = await api.getBudgets(userId);
@@ -58,6 +57,7 @@ function Budget({ userId }) {
     }
   };
 
+  //validates input and sends to api
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!monthlySalary) {
@@ -85,56 +85,78 @@ function Budget({ userId }) {
 
       alert("Budget plan saved successfully!");
       loadBudgets();
+      setMonthlySalary('');
     } catch (err) {
       console.error(err);
       alert("Failed to save budget");
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!budgets.length) return;
+    if (!window.confirm(`Delete ALL ${budgets.length} budgets?`)) return;
+    try {
+      await api.deleteAllBudgets(userId);
+      alert('All budgets deleted successfully');
+      loadBudgets();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete budgets');
+    }
+  };
+
   return (
     <div className="container mt-4">
-      <h1 className="mb-4">Budget Planner</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Budget Planner</h1>
+        {budgets.length > 0 && (
+          <button className="btn btn-danger" onClick={handleDeleteAll}>
+            Delete All Budgets
+          </button>
+        )}
+      </div>
 
       <div className="row">
         <div className="col-md-7">
-          <div className="card">
-            <div className="card-header">
-              <h5>Create Budget Plan</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-primary text-white">
+              <h5 className="mb-0">Create Budget Plan</h5>
             </div>
             <div className="card-body">
-
               <div className="mb-3">
-                <label className="form-label">Estimated Monthly Income</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={monthlySalary}
-                  onChange={handleSalaryChange}
-                  placeholder="5000"
-                />
+                <label className="form-label fw-bold">Estimated Monthly Income</label>
+                <div className="input-group">
+                  <span className="input-group-text">$</span>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={monthlySalary}
+                    onChange={handleSalaryChange}
+                    placeholder="5000"
+                  />
+                </div>
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Choose Budget Style</label>
-                <select className="form-select" onChange={handlePresetChange}>
+                <label className="form-label fw-bold">Choose Budget Style</label>
+                <select className="form-select" onChange={handlePresetChange} value={formData.percentage}>
                   <option value="">Custom</option>
                   <option value="50-30-20">50/30/20 (Classic)</option>
-                  <option value="60-20-20">60/20/20 (Aggressive Savings)</option>
+                  <option value="60-20-20">60/20/20 (Aggressive)</option>
                 </select>
               </div>
 
-              <h6 className="mt-4">Allocations</h6>
+              <h6 className="mt-4 fw-bold">Allocations</h6>
+              <p className="text-muted small">Categories are fixed. Adjust the percentages below.</p>
+              
               {formData.allocations.map((alloc, index) => (
                 <div key={index} className="input-group mb-2">
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control bg-light" 
                     value={alloc.category}
-                    onChange={(e) => {
-                      const newAlloc = [...formData.allocations];
-                      newAlloc[index].category = e.target.value;
-                      setFormData(prev => ({ ...prev, allocations: newAlloc }));
-                    }}
+                    readOnly 
+                    tabIndex="-1" 
                   />
                   <input
                     type="number"
@@ -160,20 +182,19 @@ function Budget({ userId }) {
           </div>
         </div>
 
-        
         <div className="col-md-5">
-          <div className="card">
-            <div className="card-header">
-              <h5>Current Budgets</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-dark text-white">
+              <h5 className="mb-0">Current Budgets</h5>
             </div>
             <div className="card-body">
               {budgets.length === 0 ? (
-                <p>No budgets set yet.</p>
+                <p className="text-muted text-center">No budgets set yet.</p>
               ) : (
                 budgets.map(b => (
-                  <div key={b._id} className="d-flex justify-content-between mb-2">
-                    <span>{b.category}</span>
-                    <strong>${b.limit.toFixed(2)}</strong>
+                  <div key={b._id} className="d-flex justify-content-between align-items-center mb-2 p-2 border rounded shadow-sm">
+                    <span className="fw-bold text-secondary">{b.category}</span>
+                    <span className="badge bg-success fs-6">${b.limit.toFixed(2)}</span>
                   </div>
                 ))
               )}
