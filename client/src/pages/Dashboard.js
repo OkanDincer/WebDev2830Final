@@ -60,7 +60,6 @@ function Dashboard({ userId }) {
     }
   };
 
-  // Add 1 day to displayed date to fix error 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -72,7 +71,6 @@ function Dashboard({ userId }) {
     });
   };
 
-  // Period calculations 
   const getPeriodStart = (view) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -82,7 +80,7 @@ function Dashboard({ userId }) {
       const firstDay = today.getDate() - today.getDay();
       return new Date(today.getFullYear(), today.getMonth(), firstDay);
     }
-    return new Date(today.getFullYear(), today.getMonth(), 1); // monthly
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   };
 
   const getSpentInPeriod = (budgetCategory, view) => {
@@ -97,7 +95,7 @@ function Dashboard({ userId }) {
       })
       .filter(t => {
         const txDate = new Date(t.date);
-        txDate.setDate(txDate.getDate() + 1);   // shift date by 1 day to match date in adding transaction
+        txDate.setDate(txDate.getDate() + 1);
         return txDate >= periodStart;
       })
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
@@ -129,7 +127,7 @@ function Dashboard({ userId }) {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      
       <div className="row mb-4">
         <div className="col-md-4">
           <div className="card text-white bg-success">
@@ -157,7 +155,7 @@ function Dashboard({ userId }) {
         </div>
       </div>
 
-      {/* Budget Overview */}
+      
       <div className="card mb-4">
         <div className="card-header d-flex justify-content-between align-items-center">
           <h5>Budget Overview — {budgetView.charAt(0).toUpperCase() + budgetView.slice(1)}</h5>
@@ -193,7 +191,7 @@ function Dashboard({ userId }) {
         </div>
       </div>
 
-      {/* Transactions Section */}
+      
       <div className="mb-3">
         <button className="btn btn-secondary me-2" onClick={toggleSort}>
           Sort by Date ({sortOrder === 'desc' ? 'Newest First' : 'Oldest First'})

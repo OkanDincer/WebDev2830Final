@@ -7,7 +7,7 @@ function Budget({ userId }) {
   const [budgetMode, setBudgetMode] = useState('fixed');
 
   const [formData, setFormData] = useState({
-    name: '',           // e.g. "50/30/20 Plan"
+    name: '',
     percentage: '',
     allocations: [
       { category: 'Needs (Rent, Utilities, etc.)', percent: 50 },
@@ -74,7 +74,6 @@ function Budget({ userId }) {
         return;
       }
 
-      // Save each allocation as separate budget
       for (const alloc of formData.allocations) {
         const limit = (salary * alloc.percent) / 100;
         await api.updateBudget({
@@ -161,7 +160,7 @@ function Budget({ userId }) {
           </div>
         </div>
 
-        {/* Current Budgets */}
+        
         <div className="col-md-5">
           <div className="card">
             <div className="card-header">

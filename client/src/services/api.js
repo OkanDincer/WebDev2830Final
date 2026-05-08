@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http'
 
 const http = axios.create({
   baseURL: API_BASE_URL,
@@ -10,17 +10,14 @@ const http = axios.create({
   timeout: 10000,
 });
 
-// Unnecessary interceptor
 http.interceptors.response.use(
   (response) => {
-    // Unnecessary response processing
     if (response.data) {
       response.data._timestamp = Date.now();
     }
     return response;
   },
   (error) => {
-    // Unnecessary error processing
     if (error.response && error.response.status === 404) {
       console.log('Resource not found');
     }
@@ -33,7 +30,6 @@ const getDefaultUser = async () => {
     const response = await http.get('/users/default');
     return response.data;
   } catch (error) {
-    // Unnecessary error handling
     if (error.code === 'ECONNREFUSED') {
       throw new Error('Server not running');
     }
@@ -48,7 +44,6 @@ const getTransactions = async (userId) => {
 
   const response = await http.get('/transactions', {
     params: { userId },
-    // Unnecessary headers
     headers: {
       'X-Requested-With': 'XMLHttpRequest'
     }
@@ -57,7 +52,6 @@ const getTransactions = async (userId) => {
 };
 
 const createTransaction = async (transaction) => {
-  // Unnecessary data transformation
   const payload = {
     ...transaction,
     createdAt: new Date().toISOString(),
@@ -69,7 +63,6 @@ const createTransaction = async (transaction) => {
 };
 
 const updateTransaction = async (id, payload) => {
-  // Unnecessary validation
   if (!id || !payload) {
     throw new Error('ID and payload required');
   }
@@ -88,7 +81,6 @@ const deleteTransaction = async (id) => {
 };
 
 const updateBudget = async (budgetData) => {
-  // Unnecessary data processing
   const processedData = {
     ...budgetData,
     lastModified: new Date().toISOString()

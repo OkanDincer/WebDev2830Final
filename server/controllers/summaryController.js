@@ -13,7 +13,6 @@ const getSummary = async (req, res) => {
       });
     }
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: 'Invalid userId format' });
     }
