@@ -21,12 +21,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-if (dbConnected) {
-  app.use('/transactions', transactionRoutes);
-  app.use('/budget', budgetRoutes);
-  app.use('/summary', summaryRoutes);
-  app.use('/users', userRoutes);
-}
+
+app.use('/transactions', transactionRoutes);
+app.use('/budget', budgetRoutes);
+app.use('/summary', summaryRoutes);
+app.use('/users', userRoutes);
 
 app.get('/', (req, res) => {
   if (dbConnected) {
@@ -38,12 +37,7 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-if (PORT === 5000) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-} else {
-  app.listen(5000, () => {
-    console.log('Server running on port 5000');
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
