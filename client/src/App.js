@@ -9,30 +9,64 @@ import Budget from './pages/Budget';
 
 function App() {
   const [userId, setUserId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const loadDefaultUser = async () => {
+      setIsLoading(true);
+      setHasError(false);
+
       try {
         const user = await api.getDefaultUser();
-        setUserId(user._id);
+        if (user && user._id) {
+          setUserId(user._id);
+        } else {
+          if (retryCount < 3) {
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              loadDefaultUser();
+            }, 1000);
+          } else {
+            setHasError(true);
+          }
+        }
       } catch (err) {
-        console.log('Error loading user');
+        if (retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            loadDefaultUser();
+          }, 1000);
+        } else {
+          setHasError(true);
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadDefaultUser();
-  }, []);
+    if (!userId && !hasError) {
+      loadDefaultUser();
+    }
+  }, [userId, hasError, retryCount]);
+
+  const currentUserId = userId || 'default';
 
   return (
     <BrowserRouter>
       <NavBar />
       <div className="app-container">
-        <Routes>
-          <Route path="/" element={<Dashboard userId={userId} />} />
-          <Route path="/add-income" element={<AddIncome userId={userId} />} />
-          <Route path="/add-expense" element={<AddExpense userId={userId} />} />
-          <Route path="/budget" element={<Budget userId={userId} />} />
-        </Routes>
+        {isLoading && <div className="text-center">Loading...</div>}
+        {hasError && <div className="text-center text-danger">Error loading app</div>}
+        {!isLoading && !hasError && (
+          <Routes>
+            <Route path="/" element={<Dashboard userId={currentUserId} />} />
+            <Route path="/add-income" element={<AddIncome userId={currentUserId} />} />
+            <Route path="/add-expense" element={<AddExpense userId={currentUserId} />} />
+            <Route path="/budget" element={<Budget userId={currentUserId} />} />
+          </Routes>
+        )}
       </div>
     </BrowserRouter>
   );

@@ -8,22 +8,42 @@ const summaryRoutes = require('./routes/summary');
 const userRoutes = require('./routes/users');
 
 dotenv.config();
-connectDB();
+
+let dbConnected = false;
+connectDB().then(() => {
+  dbConnected = true;
+}).catch(() => {
+  dbConnected = false;
+});
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-app.use('/transactions', transactionRoutes);
-app.use('/budget', budgetRoutes);
-app.use('/summary', summaryRoutes);
-app.use('/users', userRoutes);
+if (dbConnected) {
+  app.use('/transactions', transactionRoutes);
+  app.use('/budget', budgetRoutes);
+  app.use('/summary', summaryRoutes);
+  app.use('/users', userRoutes);
+}
 
 app.get('/', (req, res) => {
-  res.json({ message: 'SmartlyBudget backend is running' });
+  if (dbConnected) {
+    res.json({ message: 'SmartlyBudget backend is running' });
+  } else {
+    res.json({ message: 'Backend running but DB not connected' });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+if (PORT === 5000) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+} else {
+  app.listen(5000, () => {
+    console.log('Server running on port 5000');
+  });
+}
