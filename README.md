@@ -2,8 +2,10 @@ YOUTUBE LINK
 
 PRESENTATION LINK
 
-Frontend: Alexis Paten
-Backend: Okan Dincer
+Backend: Alexis Paten, Okan Dincer
+Frontend: Alexis Paten, Alexander Zhu
+Integration and Features: Alexis Paten, Okan Dincer, Alexander Zhu
+Database: Okan Dincer, Alexis Paten, Alexander Zhu
 
 Developed using:
 HTML, CSS, Java
