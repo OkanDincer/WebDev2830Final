@@ -1,6 +1,6 @@
-YOUTUBE LINK
+YOUTUBE LINK: https://www.youtube.com/watch?v=esJeMJEeL_A
 
-PRESENTATION LINK
+PRESENTATION LINK: https://docs.google.com/presentation/d/1PCxIYaWcHQB4IdgTML_ObKc8XxvdnPqZiv40cPf3YLQ/edit
 
 Backend: Alexis Paten, Okan Dincer
 Frontend: Alexis Paten, Alexander Zhu
